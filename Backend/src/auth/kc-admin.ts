@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "../../../Frontend/node_modules/axios";
 
 const base = process.env.KEYCLOAK_BASE_URL!;
 const realm = process.env.KEYCLOAK_REALM!;

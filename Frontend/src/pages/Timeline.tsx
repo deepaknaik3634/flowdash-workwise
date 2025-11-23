@@ -32,6 +32,7 @@ import {
 import { Layout } from "@/components/Layout";
 import axios from "axios";
 import { ThreeDot } from "react-loading-indicators";
+import { MessageSquare } from "lucide-react";
 
 interface Comment {
   id: string;
@@ -206,19 +207,19 @@ const TaskTimelineView = () => {
     );
   });
 
-const fetchCommentsForTask = async (taskId: string) => {
-  try {
-    const res = await axios.get(`${API_BASE_URL}/comments/${taskId}`);
-    console.log("Fetched comments", res.data);
-    const comments: Comment[] = res.data; // adjust if backend wraps in {comments}
-    const taskWithComments = tasks.find(t => t.id === taskId);
-    if (taskWithComments) {
-      setSelectedTask({ ...taskWithComments, comments });
+  const fetchCommentsForTask = async (taskId: string) => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/comments/${taskId}`);
+      console.log("Fetched comments", res.data);
+      const comments: Comment[] = res.data; // adjust if backend wraps in {comments}
+      const taskWithComments = tasks.find((t) => t.id === taskId);
+      if (taskWithComments) {
+        setSelectedTask({ ...taskWithComments, comments });
+      }
+    } catch (err) {
+      console.error("Failed to fetch comments", err);
     }
-  } catch (err) {
-    console.error("Failed to fetch comments", err);
-  }
-};
+  };
 
   // const sendComment = async () => {
   //   if (!selectedTask || !commentText.trim()) return;
@@ -242,39 +243,38 @@ const fetchCommentsForTask = async (taskId: string) => {
   //   }
   // };
 
-
   const sendComment = async () => {
-  if (!selectedTask || !commentText.trim()) return;
-  try {
-    const res = await axios.post(
-      `${API_BASE_URL}/comments/${selectedTask.id}`,
-      { content: commentText }
-    );
+    if (!selectedTask || !commentText.trim()) return;
+    try {
+      const res = await axios.post(
+        `${API_BASE_URL}/comments/${selectedTask.id}`,
+        { content: commentText }
+      );
 
-    // Construct the full comment object from backend response
-    const newComment: Comment = {
-      id: res.data.id,
-      taskId: selectedTask.id,
-      content: res.data.content,
-      authorId: res.data.authorId,
-      author: res.data.author, // ensure backend sends author object
-      createdAt: res.data.createdAt,
-      updatedAt: res.data.updatedAt,
-      seenByAssignee: res.data.seenByAssignee,
-      seenByManager: res.data.seenByManager,
-    };
+      // Construct the full comment object from backend response
+      const newComment: Comment = {
+        id: res.data.id,
+        taskId: selectedTask.id,
+        content: res.data.content,
+        authorId: res.data.authorId,
+        author: res.data.author, // ensure backend sends author object
+        createdAt: res.data.createdAt,
+        updatedAt: res.data.updatedAt,
+        seenByAssignee: res.data.seenByAssignee,
+        seenByManager: res.data.seenByManager,
+      };
 
-    setSelectedTask((prev) =>
-      prev
-        ? { ...prev, comments: [...(prev.comments || []), newComment] }
-        : prev
-    );
+      setSelectedTask((prev) =>
+        prev
+          ? { ...prev, comments: [...(prev.comments || []), newComment] }
+          : prev
+      );
 
-    setCommentText("");
-  } catch (err) {
-    console.error("Failed to send comment", err);
-  }
-};
+      setCommentText("");
+    } catch (err) {
+      console.error("Failed to send comment", err);
+    }
+  };
 
   return (
     <CardContent className="p-0">
@@ -311,7 +311,7 @@ const fetchCommentsForTask = async (taskId: string) => {
 
       {/* Table Header */}
       <div
-        className={`hidden lg:grid grid-cols-[40px_3fr_2fr_1fr_1fr_1fr_1fr_2fr_1fr] text-xs font-bold uppercase border-b border-[${COLOR_PRIMARY}]/30 px-2 py-3`}
+        className={`hidden lg:grid grid-cols-[40px_3fr_2.5fr_1.5fr_1fr_1fr_1fr_2fr_1.5fr_0.8fr] text-xs font-bold uppercase border-b border-[${COLOR_PRIMARY}]/30 px-2 py-3`}
         style={{ color: COLOR_PRIMARY }}
       >
         <div></div>
@@ -322,6 +322,7 @@ const fetchCommentsForTask = async (taskId: string) => {
         <div className="text-center">Files</div>
         <div className="text-center">Hours</div>
         <div>Notes</div>
+        <div className="text-center">Updated</div>
         <div className="text-center">Updated</div>
       </div>
 
@@ -339,11 +340,11 @@ const fetchCommentsForTask = async (taskId: string) => {
           {orderedTasks.map((task) => (
             <div
               key={task.id}
-              onClick={() => {
-                setSelectedTask(task);
-                fetchCommentsForTask(task.id);
-              }}
-              className="grid grid-cols-1 cursor-pointer lg:grid-cols-[40px_3fr_2fr_1.5fr_1fr_1fr_1fr_2fr_1.5fr] gap-5 items-center p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0000cc]/50 hover:shadow-sm transition-shadow"
+              // onClick={() => {
+              //   setSelectedTask(task);
+              //   fetchCommentsForTask(task.id);
+              // }}
+              className="grid grid-cols-1 cursor-pointer grid-cols-[40px_3fr_2.5fr_1.5fr_1fr_1fr_1fr_2fr_1.5fr_0.8fr] gap-5 items-center p-4 bg-white border border-gray-200 rounded-lg hover:border-[#0000cc]/50 hover:shadow-sm transition-shadow"
             >
               {/* Status Icon */}
               <div className="hidden lg:flex justify-center items-center">
@@ -456,6 +457,19 @@ const fetchCommentsForTask = async (taskId: string) => {
                 <br />
                 {new Date(task.updatedAt).toLocaleDateString()}
               </div>
+
+              <div className="flex justify-center items-center">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation(); // this is VERY important
+                    setSelectedTask(task);
+                    fetchCommentsForTask(task.id);
+                  }}
+                  className="hover:bg-gray-100 p-2 rounded-md transition"
+                >
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                </button>
+              </div>
             </div>
           ))}
 
@@ -475,34 +489,43 @@ const fetchCommentsForTask = async (taskId: string) => {
                   {selectedTask.notes || "No notes"}
                 </p>
 
-<div className="space-y-2 mb-4">
-  <h3 className="font-semibold text-gray-700">Comments</h3>
-  {selectedTask.comments?.length ? (
-    selectedTask.comments.map((c: Comment) => {
-      const currentUserRole = localStorage.getItem("userRole")
-      const isOwnRole = c.author.role === currentUserRole;
-      const seen =
-    currentUserRole === "OPERATOR" ? c.seenByAssignee : c.seenByManager;
+                <div className="space-y-2 mb-4">
+                  <h3 className="font-semibold text-gray-700">Comments</h3>
+                  {selectedTask.comments?.length ? (
+                    selectedTask.comments.map((c: Comment) => {
+                      const currentUserRole = localStorage.getItem("userRole");
+                      const isOwnRole = c.author.role === currentUserRole;
+                      const seen =
+                        currentUserRole === "OPERATOR"
+                          ? c.seenByAssignee
+                          : c.seenByManager;
 
-    const tickColor = seen ? "text-blue-500" : "text-gray-400";
+                      const tickColor = seen
+                        ? "text-blue-500"
+                        : "text-gray-400";
 
-      return (
-    <div
-      key={c.id}
-      className="flex justify-between items-center text-sm text-gray-600 p-2 bg-gray-100 rounded"
-    >
-      <div>
-        <span className="font-medium">{c.author.email}:</span> {c.content}
-      </div>
+                      return (
+                        <div
+                          key={c.id}
+                          className="flex justify-between items-center text-sm text-gray-600 p-2 bg-gray-100 rounded"
+                        >
+                          <div>
+                            <span className="font-medium">
+                              {c.author.email}:
+                            </span>{" "}
+                            {c.content}
+                          </div>
 
-      {!isOwnRole && <Check className={`h-4 w-4 ${tickColor}`} />}
-    </div>
-  );
-})
-  ) : (
-    <p className="text-sm text-gray-400">No comments yet</p>
-  )}
-</div>
+                          {!isOwnRole && (
+                            <Check className={`h-4 w-4 ${tickColor}`} />
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <p className="text-sm text-gray-400">No comments yet</p>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="text"

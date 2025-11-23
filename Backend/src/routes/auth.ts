@@ -2,7 +2,8 @@ import { Router } from "express";
 import * as bcrypt from "bcrypt";
 import * as jwt from "jsonwebtoken";
 import prisma from "../db";
-import axios from "axios";
+import axios from "../../../Frontend/node_modules/axios";
+import { ensureFreshKeycloakToken } from "../middleware/validateKeycloakBeforeHRM";
 
 const router = Router();
 
@@ -49,11 +50,12 @@ router.post("/login", async (req, res) => {
 
     const body = new URLSearchParams({
       grant_type: "password",
-      client_id: process.env.KEYCLOAK_AUDIENCE!,          // e.g. hrm-backend
-      client_secret: process.env.KEYCLOAK_AUDIENCE_SECRET!, // from Credentials tab
+      client_id: process.env.KEYCLOAK_PROVISIONER_CLIENT_ID!, // e.g. hrm-backend
+      client_secret: process.env.KEYCLOAK_PROVISIONER_CLIENT_SECRET!, // from Credentials tab
       username: email,
       password,
     });
+    console.log("token url: ", body)
 
     let kc;
     try {
@@ -61,8 +63,9 @@ router.post("/login", async (req, res) => {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       });
       kc = data;
+      console.log(data)
     } catch (err: any) {
-      return res.status(401).json({ error: "Invalid credentials (Keycloak)" });
+      return res.status(401).json({ error: "Invalid credentials (Keycloak)", err });
     }
 
     // 2️⃣ Decode Keycloak access token to extract info
@@ -106,11 +109,26 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
+    res.cookie("keycloak_token", kc.access_token, {
+      httpOnly: true,
+      secure: false, // ✅ must be false in localhost (no HTTPS)
+      sameSite: "lax", // ✅ allows cookies for cross-site GETs
+      maxAge: kc.expires_in * 1000, // 5 mins
+    });
+
+    res.cookie("keycloak_refresh_token", kc.refresh_token, {
+      httpOnly: true,
+      secure: false, // ✅ must be false in localhost (no HTTPS)
+      sameSite: "lax", // ✅ allows cookies for cross-site GETs
+      maxAge: kc.refresh_expires_in * 1000, // ~30 mins
+    });
+
     res.json({
-      token: appToken,                // your app token (frontend uses this)
+      token: appToken, // your app token (frontend uses this)
+      keycloakToken: kc.access_token,
       role: user.role,
       userId: user.id,
-      email
+      email,
     });
   } catch (e: any) {
     console.error(e);
@@ -135,6 +153,25 @@ router.post("/token", async (req, res) => {
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: "Failed to get token" });
+  }
+});
+
+router.get("/go-to-hrm", ensureFreshKeycloakToken, async (req, res) => {
+  try {
+    const { tenantCode } = req.query;
+    const backend_url = process.env.HRM_BACKEND_ROUTE
+
+    if (!tenantCode)
+      return res.status(400).json({ error: "tenantCode is required" });
+
+    const accessToken = req.validAccessToken;
+
+    // Redirect to HRM frontend
+    const hrmRedirectUrl = `${backend_url}/api/tenant/sso-login/${tenantCode}?token=${accessToken}`;
+    res.json({ redirectUrl: hrmRedirectUrl });
+  } catch (err: any) {
+    console.error("Redirect failed:", err.message);
+    res.status(500).json({ error: "Failed to redirect to HRM" });
   }
 });
 
