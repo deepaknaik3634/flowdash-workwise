@@ -111,14 +111,14 @@ router.post("/login", async (req, res) => {
 
     res.cookie("keycloak_token", kc.access_token, {
       httpOnly: true,
-      secure: true, // ✅ must be false in localhost (no HTTPS)
+      secure: false, // ✅ must be false in localhost (no HTTPS)
       sameSite: "none", // ✅ allows cookies for cross-site GETs
       maxAge: kc.expires_in * 1000, // 5 mins
     });
 
     res.cookie("keycloak_refresh_token", kc.refresh_token, {
       httpOnly: true,
-      secure: true, // ✅ must be false in localhost (no HTTPS)
+      secure: false, // ✅ must be false in localhost (no HTTPS)
       sameSite: "none", // ✅ allows cookies for cross-site GETs
       maxAge: kc.refresh_expires_in * 1000, // ~30 mins
     });
