@@ -139,6 +139,53 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.post("/logout", async (req, res) => {
+  try {
+    const refreshToken = req.cookies["keycloak_refresh_token"];
+
+    if (!refreshToken) {
+      return res.status(400).json({ error: "No refresh token found" });
+    }
+
+    const logoutUrl = `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout`;
+
+    const body = new URLSearchParams({
+      client_id: process.env.KEYCLOAK_PROVISIONER_CLIENT_ID!,
+      client_secret: process.env.KEYCLOAK_PROVISIONER_CLIENT_SECRET!,
+      refresh_token: refreshToken,
+    });
+
+    await axios.post(logoutUrl, body, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+
+    //  Remove cookies
+    res.clearCookie("keycloak_token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+    res.clearCookie("keycloak_refresh_token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+    });
+
+    return res.json({ message: "Logged out successfully" });
+  } catch (err: any) {
+    console.error("Logout Error:", err.response?.data || err.message);
+    return res.status(500).json({
+      error: err?.message || "Failed to log out",
+    });
+  }
+});
+
 router.post("/token", async (req, res) => {
   try {
     const url = `${process.env.KEYCLOAK_BASE_URL}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/token`;
@@ -185,7 +232,7 @@ router.get("/go-to-hrm", ensureFreshKeycloakToken, async (req, res) => {
     const accessToken = req.validAccessToken;
 
     // Redirect to HRM frontend
-    const hrmRedirectUrl = `${backend_url}/api/tenant/sso-login/${tenantCode}?token=${accessToken}`;
+    const hrmRedirectUrl = `${backend_url}/api/tenant/sso-login/${tenantCode}?token=${accessToken}&sso=1`;
     res.json({ redirectUrl: hrmRedirectUrl });
   } catch (err: any) {
     console.error("Redirect failed:", err.message);
