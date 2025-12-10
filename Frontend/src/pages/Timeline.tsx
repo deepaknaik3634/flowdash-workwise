@@ -34,6 +34,12 @@ import {
 } from "@/components/ui/select";
 import { Layout } from "@/components/Layout";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Comment {
   id: string;
@@ -554,12 +560,23 @@ const TaskTimelineView = ({ role }: { role: any }) => {
               </div>
 
               {/* Notes (Desktop Only) */}
-              <div
-                className="hidden lg:block text-sm text-gray-500 truncate"
-                title={task.notes || ""}
-              >
-                {task.notes || "No notes"}
-              </div>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="hidden lg:block text-sm text-gray-600 truncate max-w-[180px] cursor-pointer hover:text-blue-700">
+                      {task.notes || "No notes"}
+                    </div>
+                  </TooltipTrigger>
+
+                  <TooltipContent
+                    align="start"
+                    side="bottom"
+                    className="max-w-xs whitespace-pre-wrap bg-white text-gray-800 shadow-lg border p-3 rounded-md"
+                  >
+                    {task.notes || "No notes available"}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               {/* Updated Time (Desktop Only) */}
               <div className="hidden lg:block text-center text-xs text-gray-600">

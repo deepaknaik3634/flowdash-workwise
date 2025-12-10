@@ -24,7 +24,7 @@ router.get("/ManagerTasks", auth, async (req, res) => {
 
     // 1. Fetch tasks assigned to the logged-in employee
     const tasks = await prisma.task.findMany({
-      where: { assigneeId: employeeId },
+      where: { assigneeId: employeeId, isDeleted: false },
       include: {
         createdBy: true,
       },

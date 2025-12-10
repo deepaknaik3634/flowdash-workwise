@@ -99,7 +99,7 @@ router.post(
 // List tasks (manager: all; operator: mine)
 router.get("/", auth, async (req, res) => {
   const isManager = req.user!.role === "MANAGER";
-  const where = isManager ? {} : { assigneeId: req.user!.id };
+  const where = isManager ? {isDeleted: false} : { assigneeId: req.user!.id, isDeleted: false };
 
   const { assigneeId, status } = req.query;
   if (assigneeId) (where as any).assigneeId = String(assigneeId);
@@ -287,7 +287,21 @@ router.delete(
           .json({ message: "Not authorized to delete this task" });
       }
 
-      await prisma.task.delete({ where: { id } });
+      // await prisma.taskWorkLog.deleteMany({
+      //   where:{
+      //     taskId: id
+      //   }
+      // })
+
+      // await prisma.task.delete({ where: { id } });
+      await prisma.task.update({
+        where:{
+          id
+        },
+        data:{
+          isDeleted: true
+        }
+      })
 
       res.status(200).json({ message: "Task deleted successfully" });
     } catch (error) {
@@ -392,7 +406,7 @@ router.get("/EmployeeTasks", auth, async (req, res) => {
 
     // 1. Fetch tasks assigned to the logged-in employee
     const tasks = await prisma.task.findMany({
-      where: { assigneeId: employeeId },
+      where: { assigneeId: employeeId, isDeleted: false },
       include: {
         createdBy: true,
       },
@@ -442,6 +456,47 @@ router.get("/EmployeeTasks", auth, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch tasks" });
   }
 });
+
+// GET THE COMPLTED TASK OF THE PARTICULAR EMPLOYEES
+
+router.get("/:employeeId/completed", auth, async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    if (!employeeId) {
+      return res.status(400).json({ message: "Employee ID required" });
+    }
+
+    // 1️⃣ Fetch employee profile to get associated userId
+    const employee = await prisma.employee.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    });
+
+    if (!employee) {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    // 2️⃣ Fetch tasks only completed by this user
+    const tasks = await prisma.task.findMany({
+      where: {
+        assigneeId: employee.userId,
+        status: "DONE",
+      },
+      include: {
+        createdBy: {
+          select: { email: true, role: true },
+        },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+
+    res.json({ tasks });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch tasks" });
+  }
+});
+
 
 // ----------------------------
 // PATCH: Update task status

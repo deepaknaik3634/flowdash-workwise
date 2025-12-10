@@ -81,9 +81,11 @@ interface Task {
   dueDate?: string;
   fileUrl_manager?: string;
   fileUrl_operator?: string;
+  updatedAt: string;
 }
 interface EmployeeResponse {
   employees: Employee[];
+  TaskCompletedCount: number;
 }
 interface Employee {
   id: string;
@@ -139,7 +141,9 @@ const SkeletonEmployeeManagerDashboard = () => {
 
   // Helper component for task table rows
   const TaskRowSkeleton = () => (
-    <tr className="border-b last:border-b-0 animate-pulse hidden md:table-row"> {/* Hide table rows on mobile */}
+    <tr className="border-b last:border-b-0 animate-pulse hidden md:table-row">
+      {" "}
+      {/* Hide table rows on mobile */}
       <td className="px-6 py-4">
         <div className="h-4 w-48 bg-gray-200 rounded"></div>
       </td>
@@ -167,14 +171,14 @@ const SkeletonEmployeeManagerDashboard = () => {
   // Mobile Card Skeleton for task rows
   const TaskCardSkeleton = () => (
     <div className="md:hidden p-3 border-b last:border-b-0 animate-pulse bg-white border border-gray-200 rounded-lg">
-        <div className="h-4 w-2/3 bg-gray-300 rounded mb-2"></div>
-        <div className="flex items-center justify-between gap-4">
-            <div className="h-6 w-1/4 bg-gray-100 rounded-full"></div>
-            <div className="h-6 w-1/4 bg-gray-200 rounded-full"></div>
-            <div className="h-4 w-1/4 bg-gray-100 rounded"></div>
-        </div>
+      <div className="h-4 w-2/3 bg-gray-300 rounded mb-2"></div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="h-6 w-1/4 bg-gray-100 rounded-full"></div>
+        <div className="h-6 w-1/4 bg-gray-200 rounded-full"></div>
+        <div className="h-4 w-1/4 bg-gray-100 rounded"></div>
+      </div>
     </div>
-  )
+  );
 
   return (
     <Layout>
@@ -186,8 +190,11 @@ const SkeletonEmployeeManagerDashboard = () => {
             <div className="h-3 w-64 sm:h-4 sm:w-96 bg-gray-200 rounded mt-1 sm:mt-2"></div>
           </div>
           <div className="flex items-center gap-4 mt-3 sm:mt-0 w-full sm:w-auto justify-between">
-            <div className="h-9 w-28 sm:w-32 bg-blue-200 rounded-lg"></div> {/* Create Task Button placeholder */}
-            <Card className="p-3 sm:p-4 bg-blue-100/30 border border-blue-200 h-auto w-36 sm:w-48"> {/* Mini Stat */}
+            <div className="h-9 w-28 sm:w-32 bg-blue-200 rounded-lg"></div>{" "}
+            {/* Create Task Button placeholder */}
+            <Card className="p-3 sm:p-4 bg-blue-100/30 border border-blue-200 h-auto w-36 sm:w-48">
+              {" "}
+              {/* Mini Stat */}
               <div className="flex items-center gap-2 sm:gap-3">
                 <Users className="h-5 w-5 sm:h-6 sm:w-6 text-red-400" />
                 <div>
@@ -235,7 +242,7 @@ const SkeletonEmployeeManagerDashboard = () => {
                   <CardHeader className="pb-2">
                     <div className="h-6 w-52 bg-red-100 rounded"></div>
                   </CardHeader>
-                  
+
                   {/* Desktop Table */}
                   <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-left text-sm">
@@ -253,10 +260,9 @@ const SkeletonEmployeeManagerDashboard = () => {
                   {/* Mobile Cards */}
                   <div className="md:hidden space-y-2 p-2">
                     {Array.from({ length: 3 }).map((_, i) => (
-                          <TaskCardSkeleton key={i} />
-                        ))}
+                      <TaskCardSkeleton key={i} />
+                    ))}
                   </div>
-
                 </Card>
               </CardContent>
             </div>
@@ -270,9 +276,7 @@ const SkeletonEmployeeManagerDashboard = () => {
 
 // --- StatsCardWrapper (To pass down responsive classes easily) ---
 const StatsCardWrapper = ({ children }: { children: React.ReactNode }) => (
-    <div className="h-full flex flex-col">
-        {children}
-    </div>
+  <div className="h-full flex flex-col">{children}</div>
 );
 // -----------------------------------------------------------------
 
@@ -300,7 +304,7 @@ const TaskActionMenu = ({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         {/* Adjusted icon size for mobile compatibility */}
-        <Button variant="ghost" className="h-7 w-7 p-0 ml-1 text-[#0000cc]"> 
+        <Button variant="ghost" className="h-7 w-7 p-0 ml-1 text-[#0000cc]">
           <MoreVertical className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -399,7 +403,10 @@ const EmployeeCalendarView = ({ employee }: { employee: Employee }) => {
                   {completedTasks
                     .filter((t) => t.dueDate === date)
                     .map((task) => (
-                      <li key={task.id} className="text-green-700/90 text-xs sm:text-sm">
+                      <li
+                        key={task.id}
+                        className="text-green-700/90 text-xs sm:text-sm"
+                      >
                         {task.title}
                       </li>
                     ))}
@@ -433,33 +440,63 @@ const TaskCommentPanel = ({
   const { toast } = useToast();
 
   const fetchComments = useCallback(async () => {
-    // ... fetch logic
-  }, [task.id, token, currentUserRole]);
+    try {
+      const { data } = await axios.get<Comment[]>(
+        `${API_BASE_URL}/comments/${task.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      // Backend returns array directly
+      setComments(data);
+
+      // scroll to latest
+      setTimeout(() => {
+        const container = document.getElementById("comment-container");
+        if (container) container.scrollTop = container.scrollHeight;
+      }, 50);
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error Loading Comments",
+        description: "Please refresh page or try again.",
+        variant: "destructive",
+      });
+    }
+  }, [task.id, token]);
 
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
 
-  const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+const handleAddComment = async () => {
+  if (!newComment.trim()) return;
 
-    try {
-      const { data } = await axios.post<Comment>(
-        `${API_BASE_URL}/comments/${task.id}`,
-        { content: newComment },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+  try {
+    await axios.post(
+      `${API_BASE_URL}/comments/${task.id}`,
+      { content: newComment },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
-      setComments((prev) => [...prev, data]);
-      setNewComment("");
-    } catch (err) {
-      console.error(err);
-      toast({
-        title: "Error",
-        description: `Faild to add comment. Please try again.`,
-      });
-    }
-  };
+    setNewComment("");
+
+    // Fetch updated thread
+    await fetchComments();
+
+  } catch (err) {
+    console.error(err);
+    toast({
+      title: "Error",
+      description: "Failed to add comment.",
+      variant: "destructive",
+    });
+  }
+};
+
   // ... rest of the TaskCommentPanel implementation ...
 
   return (
@@ -553,11 +590,13 @@ const EmployeeTaskView = ({
   allEmployees,
   fetchEmployees,
   setSelectedEmployee,
+  taskCompleted,
 }: {
   employee: Employee;
   allEmployees: Employee[];
   fetchEmployees: () => Promise<void>;
   setSelectedEmployee: (emp: Employee) => void;
+  taskCompleted: number;
 }) => {
   const [loadingTasks, setLoadingTasks] = useState(false);
   const token = localStorage.getItem("token");
@@ -566,25 +605,59 @@ const EmployeeTaskView = ({
   const ongoingTasks = employee.tasks.filter((t) => t.status !== "DONE");
   const completedTasks = employee.tasks.filter((t) => t.status === "DONE");
   const [activeCommentTask, setActiveCommentTask] = useState<Task | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<string | null>(null);
 
-  const handleTaskDelete = async (taskId: string) => {
-    // ... delete logic
-    if (!confirm("Are you sure you want to delete this task?")) return;
+  // const handleTaskDelete = async (taskId: string) => {
+  //   // ... delete logic
+  //   if (!confirm("Are you sure you want to delete this task?")) return;
+  //   setLoadingTasks(true);
+  //   try {
+  //     await axios.delete(`${API_BASE_URL}/tasks/${taskId}`, {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     await fetchEmployees();
+  //   } catch (err) {
+  //     console.error(err);
+  //     toast({
+  //       title: "Error",
+  //       description: `Faild to delete task. Please try again.`,
+  //     });
+  //   } finally {
+  //     setLoadingTasks(false);
+  //   }
+  // };
+
+  const confirmDelete = async () => {
+    if (!taskToDelete) return;
     setLoadingTasks(true);
+
     try {
-      await axios.delete(`${API_BASE_URL}/tasks/${taskId}`, {
+      await axios.delete(`${API_BASE_URL}/tasks/${taskToDelete}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchEmployees();
+      toast({
+        title: "Task Deleted",
+        description: "The task has been successfully deleted.",
+        variant: "default",
+      });
     } catch (err) {
-      console.error(err);
       toast({
         title: "Error",
-        description: `Faild to delete task. Please try again.`,
+        description: "Failed to delete the task. Please try again.",
+        variant: "destructive",
       });
     } finally {
+      setDeleteDialogOpen(false);
+      setTaskToDelete(null);
       setLoadingTasks(false);
     }
+  };
+
+  const showDeleteDialog = (taskId: string) => {
+    setTaskToDelete(taskId);
+    setDeleteDialogOpen(true);
   };
 
   const handleTaskTransfer = async (taskId: string, newEmployeeId: string) => {
@@ -641,14 +714,14 @@ const EmployeeTaskView = ({
       <Card className="flex-1 border-[#0000cc]/20 shadow-sm hover:shadow-md transition-all duration-200">
         <CardHeader className="pb-2">
           <CardTitle className="text-lg sm:text-xl flex items-center gap-2 text-[#0000cc]">
-            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" /> Ongoing Tasks (
-            {ongoingTasks.length})
+            <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-500" />{" "}
+            Ongoing Tasks ({ongoingTasks.length})
           </CardTitle>
           <CardDescription className="text-sm text-gray-500">
             Tasks currently assigned, in progress, or on hold.
           </CardDescription>
         </CardHeader>
-        
+
         {/* --- DESKTOP TABLE VIEW (md:block) --- */}
         <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left text-sm">
@@ -753,7 +826,7 @@ const EmployeeTaskView = ({
                       task={task}
                       currentEmployeeId={employee.id}
                       onTaskTransfer={handleTaskTransfer}
-                      onTaskDelete={handleTaskDelete}
+                      onTaskDelete={showDeleteDialog}
                       employees={allEmployees}
                       setActiveCommentTask={setActiveCommentTask}
                     />
@@ -766,94 +839,106 @@ const EmployeeTaskView = ({
 
         {/* --- MOBILE CARD VIEW (hidden md:hidden) --- */}
         <div className="space-y-3 p-2 md:hidden">
-            {ongoingTasks.map((task: any) => (
-                <div
-                    key={task.id}
-                    className="p-3 border border-gray-200 rounded-lg bg-white shadow-sm"
-                >
-                    <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-bold text-sm text-gray-800 break-words pr-2">
-                            {task.title}
-                        </h4>
-                        <TaskActionMenu
-                            task={task}
-                            currentEmployeeId={employee.id}
-                            onTaskTransfer={handleTaskTransfer}
-                            onTaskDelete={handleTaskDelete}
-                            employees={allEmployees}
-                            setActiveCommentTask={setActiveCommentTask}
-                        />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-y-2 text-xs">
-                        {/* Status & Priority */}
-                        <div className="flex flex-col">
-                            <span className="text-gray-500">Status</span>
-                            <Badge
-                                variant="default"
-                                className={`w-fit mt-1 text-[10px] ${getStatusBadgeClass(task.status)}`}
-                            >
-                                {task.status.replace("_", " ")}
-                            </Badge>
-                        </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-gray-500">Priority</span>
-                            <div className="pt-1">
-                                <Select
-                                    value={task.priority}
-                                    onValueChange={(v) => handlePriorityChange(task.id, v)}
-                                >
-                                    <SelectTrigger
-                                        className={`w-[75px] h-6 text-white text-[10px] font-medium rounded-full border-0 ${getPriorityColor(
-                                            task.priority
-                                        )}`}
-                                    >
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="HIGH">High</SelectItem>
-                                        <SelectItem value="MEDIUM">Medium</SelectItem>
-                                        <SelectItem value="LOW">Low</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                        
-                        {/* Due Date & Files */}
-                        <div className="flex flex-col pt-2 border-t border-gray-100">
-                            <span className="text-gray-500">Due Date</span>
-                            <span className="font-medium text-gray-700">
-                                {task.dueDate
-                                ? new Date(task.dueDate).toLocaleDateString()
-                                : "-"}
-                            </span>
-                        </div>
-                        <div className="flex flex-col items-end pt-2 border-t border-gray-100">
-                            <span className="text-gray-500">Files</span>
-                            <span className="font-medium text-gray-700 flex gap-3 pt-1">
-                                {task.fileUrl_manager ? (
-                                    <a href={task.fileUrl_manager} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:text-green-800 flex items-center gap-1">
-                                        <Upload className="h-3 w-3" /> M.
-                                    </a>
-                                ) : (
-                                    <span className="text-gray-400 flex items-center gap-1">
-                                        <Upload className="h-3 w-3" /> M.
-                                    </span>
-                                )}
-                                {task.fileUrl_operator ? (
-                                    <a href={task.fileUrl_operator} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:text-amber-800 flex items-center gap-1">
-                                        <Upload className="h-3 w-3" /> O.
-                                    </a>
-                                ) : (
-                                    <span className="text-gray-400 flex items-center gap-1">
-                                        <Upload className="h-3 w-3" /> O.
-                                    </span>
-                                )}
-                            </span>
-                        </div>
-                    </div>
+          {ongoingTasks.map((task: any) => (
+            <div
+              key={task.id}
+              className="p-3 border border-gray-200 rounded-lg bg-white shadow-sm"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-bold text-sm text-gray-800 break-words pr-2">
+                  {task.title}
+                </h4>
+                <TaskActionMenu
+                  task={task}
+                  currentEmployeeId={employee.id}
+                  onTaskTransfer={handleTaskTransfer}
+                  onTaskDelete={showDeleteDialog}
+                  employees={allEmployees}
+                  setActiveCommentTask={setActiveCommentTask}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-y-2 text-xs">
+                {/* Status & Priority */}
+                <div className="flex flex-col">
+                  <span className="text-gray-500">Status</span>
+                  <Badge
+                    variant="default"
+                    className={`w-fit mt-1 text-[10px] ${getStatusBadgeClass(
+                      task.status
+                    )}`}
+                  >
+                    {task.status.replace("_", " ")}
+                  </Badge>
                 </div>
-            ))}
+                <div className="flex flex-col items-end">
+                  <span className="text-gray-500">Priority</span>
+                  <div className="pt-1">
+                    <Select
+                      value={task.priority}
+                      onValueChange={(v) => handlePriorityChange(task.id, v)}
+                    >
+                      <SelectTrigger
+                        className={`w-[75px] h-6 text-white text-[10px] font-medium rounded-full border-0 ${getPriorityColor(
+                          task.priority
+                        )}`}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="HIGH">High</SelectItem>
+                        <SelectItem value="MEDIUM">Medium</SelectItem>
+                        <SelectItem value="LOW">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Due Date & Files */}
+                <div className="flex flex-col pt-2 border-t border-gray-100">
+                  <span className="text-gray-500">Due Date</span>
+                  <span className="font-medium text-gray-700">
+                    {task.dueDate
+                      ? new Date(task.dueDate).toLocaleDateString()
+                      : "-"}
+                  </span>
+                </div>
+                <div className="flex flex-col items-end pt-2 border-t border-gray-100">
+                  <span className="text-gray-500">Files</span>
+                  <span className="font-medium text-gray-700 flex gap-3 pt-1">
+                    {task.fileUrl_manager ? (
+                      <a
+                        href={task.fileUrl_manager}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-green-600 hover:text-green-800 flex items-center gap-1"
+                      >
+                        <Upload className="h-3 w-3" /> M.
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <Upload className="h-3 w-3" /> M.
+                      </span>
+                    )}
+                    {task.fileUrl_operator ? (
+                      <a
+                        href={task.fileUrl_operator}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-amber-600 hover:text-amber-800 flex items-center gap-1"
+                      >
+                        <Upload className="h-3 w-3" /> O.
+                      </a>
+                    ) : (
+                      <span className="text-gray-400 flex items-center gap-1">
+                        <Upload className="h-3 w-3" /> O.
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {ongoingTasks.length === 0 && (
@@ -867,15 +952,17 @@ const EmployeeTaskView = ({
       </Card>
 
       {/* Completed Tasks Summary (Responsive text size) */}
-      <Card className="p-3 sm:p-4 bg-green-50 border-green-300 shadow-sm">
+      {/* <Card className="p-3 sm:p-4 bg-green-50 border-green-300 shadow-sm">
         <div className="flex justify-between items-center">
           <h4 className="font-semibold text-green-800 flex items-center gap-2 text-sm sm:text-base">
             <CheckCircle2 className="h-4 w-4 text-green-600" />
             Completed Tasks:{" "}
-            <span className="text-lg sm:text-xl font-bold">{completedTasks.length}</span>
+            <span className="text-lg sm:text-xl font-bold">
+              {taskCompleted}
+            </span>
           </h4>
         </div>
-      </Card>
+      </Card> */}
 
       {activeCommentTask && (
         <TaskCommentPanel
@@ -883,10 +970,39 @@ const EmployeeTaskView = ({
           onClose={() => setActiveCommentTask(null)}
         />
       )}
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Task?</DialogTitle>
+          </DialogHeader>
+
+          <p className="text-gray-600 text-sm">
+            Are you sure you want to delete this task? This action cannot be
+            undone.
+          </p>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <button
+              className="px-4 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-100"
+              onClick={() => setDeleteDialogOpen(false)}
+            >
+              Cancel
+            </button>
+
+            <button
+              disabled={loadingTasks}
+              className="px-4 py-2 rounded bg-[#0000CC] text-white hover:bg-[#0000ccaa]"
+              onClick={confirmDelete}
+            >
+              {loadingTasks ? "Deleting..." : "Delete"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
-
 
 // --- Main Dashboard Component ---
 export function EmployeeManagerDashboard() {
@@ -897,6 +1013,7 @@ export function EmployeeManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"calendar" | "task">("task");
+  const [taskCompltedCount, setTaskCompletedCount] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
@@ -918,13 +1035,14 @@ export function EmployeeManagerDashboard() {
     // ... fetch logic
     setLoading(true);
     try {
-      const { data } = await axios.get<EmployeeResponse>(
+      const { data }: any = await axios.get<EmployeeResponse>(
         `${API_BASE_URL}/employees/employees`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       setEmployees(data.employees);
+      setTaskCompletedCount(data.TaskCompletedCount);
     } catch (err) {
       console.error(err);
       setError(
@@ -979,6 +1097,135 @@ export function EmployeeManagerDashboard() {
       assigneeEmployeeId: "",
       file: null,
     });
+  };
+
+  const COLOR_PRIMARY = "#0000cc"; // Deep Blue
+  const COLOR_ACCENT_ICON = "text-red-500"; // Red
+  const COLOR_SUCCESS = "#10b981"; // Green for completion
+
+  const CompletedCalendarView = ({ employeeId }: { employeeId: string }) => {
+    // ... (CompletedCalendarView logic remains the same, but using responsive text sizes)
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [loading, setLoading] = useState(false);
+    const token = localStorage.getItem("token");
+
+    const fetchTasks = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(
+          `${API_BASE_URL}/tasks/${employeeId}/completed`,
+          {
+            headers: {
+              authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        // const completed = res.data.tasks.filter(
+        //   (t: Task) => t.status === "DONE"
+        // );
+        setTasks(res.data.tasks || []);
+      } catch (err) {
+        console.error("Failed to fetch tasks", err);
+      }
+      setLoading(false);
+    };
+
+    useEffect(() => {
+      fetchTasks();
+    }, []);
+
+    const completedByDate: Record<string, Task[]> = tasks.reduce(
+      (acc, task) => {
+        const date = task.updatedAt.split("T")[0];
+        acc[date] = acc[date] || [];
+        acc[date].push(task);
+        return acc;
+      },
+      {} as Record<string, Task[]>
+    );
+
+    const sortedDates = Object.keys(completedByDate).sort().reverse();
+
+    return (
+      <CardContent className="p-0 space-y-4">
+        <CardHeader className="p-0 pb-4">
+          {/* Title: Smaller on mobile (text-lg) */}
+          <CardTitle
+            className="text-lg sm:text-xl flex items-center gap-2"
+            style={{ color: COLOR_PRIMARY }}
+          >
+            <CalendarDays
+              className={`h-4 w-4 sm:h-5 sm:w-5 ${COLOR_ACCENT_ICON}`}
+            />
+            Completed Task History
+          </CardTitle>
+          <CardDescription className="text-sm text-gray-500">
+            A chronological log of all tasks you have marked as 'Completed'.
+          </CardDescription>
+        </CardHeader>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-40">
+            <Loader2
+              className={`h-6 w-6 animate-spin`}
+              style={{ color: COLOR_PRIMARY }}
+            />
+          </div>
+        ) : sortedDates.length > 0 ? (
+          <div className="space-y-4 sm:space-y-6">
+            {" "}
+            {/* Reduced vertical space on mobile */}
+            {sortedDates.map((date) => (
+              <div
+                key={date}
+                className="border-l-4 pl-3 sm:pl-4 py-2 sm:py-3 rounded-r-md shadow-sm" // Reduced padding
+                style={{
+                  borderColor: COLOR_SUCCESS,
+                  backgroundColor: `${COLOR_SUCCESS}10`,
+                }}
+              >
+                <p
+                  className="font-bold text-sm sm:text-base mb-1" // Reduced text size
+                  style={{ color: COLOR_SUCCESS }}
+                >
+                  {new Date(date).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+                <ul className="space-y-1">
+                  {" "}
+                  {/* Reduced vertical space */}
+                  {completedByDate[date].map((task) => (
+                    <li
+                      key={task.id}
+                      className="flex items-center gap-2 text-xs sm:text-sm text-green-800" // Reduced text size
+                    >
+                      <CheckCircle2
+                        className={`h-3 w-3 sm:h-4 sm:w-4 text-green-600`}
+                      />{" "}
+                      {/* Reduced icon size */}
+                      <span className="font-medium">{task.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 sm:py-10 text-gray-500 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+            <ListChecks
+              className={`h-8 w-8 sm:h-10 sm:w-10 mx-auto mb-3`} // Reduced icon size
+              style={{ color: COLOR_PRIMARY }}
+            />
+            <p className="text-sm">
+              No completed tasks logged yet this period.
+            </p>
+          </div>
+        )}
+      </CardContent>
+    );
   };
 
   // Create Task Logic (omitted for brevity)
@@ -1041,10 +1288,7 @@ export function EmployeeManagerDashboard() {
   };
 
   // Loading and Error States
-  if (loading)
-    return (
-      <SkeletonEmployeeManagerDashboard />
-    );
+  if (loading) return <SkeletonEmployeeManagerDashboard />;
 
   if (error)
     return (
@@ -1285,9 +1529,8 @@ export function EmployeeManagerDashboard() {
 
         {/* Main Content Grid - Stacked on mobile, side-by-side on large screens */}
         <div className="flex flex-col gap-6 lg:grid lg:grid-cols-3 xl:grid-cols-4 h-auto lg:h-[calc(100vh-160px)]">
-          
           {/* Employee List (Column 1) - Fixed height on mobile, full height on desktop */}
-          <Card className="lg:col-span-1 p-4 overflow-y-auto shadow-lg border-[#0000cc]/20 h-[300px] lg:h-full"> 
+          <Card className="lg:col-span-1 p-4 overflow-y-auto shadow-lg border-[#0000cc]/20 h-[300px] lg:h-full">
             <CardHeader className="px-2 pt-1 pb-4">
               <CardTitle className="text-lg sm:text-xl text-[#0000cc]">
                 Team Roster
@@ -1306,7 +1549,8 @@ export function EmployeeManagerDashboard() {
                 >
                   <div className="flex items-center gap-3">
                     <User
-                      className={`h-4 w-4 ${ // Smaller icon
+                      className={`h-4 w-4 ${
+                        // Smaller icon
                         selectedEmployee?.id === emp.id
                           ? "text-red-500"
                           : "text-[#0000cc]"
@@ -1315,7 +1559,8 @@ export function EmployeeManagerDashboard() {
                     <div>
                       <h4 className="font-semibold leading-none">{emp.name}</h4>
                       <p
-                        className={`text-xs ${ // Smaller text
+                        className={`text-xs ${
+                          // Smaller text
                           selectedEmployee?.id === emp.id
                             ? "text-white/80"
                             : "text-gray-500"
@@ -1375,7 +1620,7 @@ export function EmployeeManagerDashboard() {
                   <Separator className="my-0" />
                   <CardContent className="p-4 sm:p-6 flex-1 overflow-y-auto">
                     <TabsContent value="calendar" className="h-full m-0">
-                      <EmployeeCalendarView employee={selectedEmployee} />
+                      <CompletedCalendarView employeeId={selectedEmployee.id} />
                     </TabsContent>
                     <TabsContent value="task" className="h-full m-0">
                       <EmployeeTaskView
@@ -1383,6 +1628,7 @@ export function EmployeeManagerDashboard() {
                         setSelectedEmployee={setSelectedEmployee}
                         allEmployees={employees}
                         fetchEmployees={fetchEmployees}
+                        taskCompleted={taskCompltedCount}
                       />
                     </TabsContent>
                   </CardContent>

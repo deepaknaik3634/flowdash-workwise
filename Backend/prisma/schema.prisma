@@ -78,6 +78,7 @@ model Task {
 
   fileUrl_manager  String?
   fileUrl_operator String?
+  isDeleted Boolean @default(false)
   // relations
   createdById      String?
   createdBy        User?   @relation("TasksCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
