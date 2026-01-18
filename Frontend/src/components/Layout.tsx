@@ -110,7 +110,7 @@ export const Layout = ({ children }: LayoutProps) => {
 
       {/* 🔵 SIDEBAR - **Fixed on all screen sizes** except for the translate property 🔵 */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 w-60 bg-[#2a00b7] text-white flex flex-col shadow-lg 
+        className={`fixed inset-y-0 left-0 z-40 w-60 bg-[#0f172a] text-white flex flex-col shadow-lg 
           transform transition-transform duration-300 ease-in-out
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0 lg:w-60 lg:h-screen`} // Removed lg:static

@@ -55,7 +55,7 @@ interface Stats {
   completionTrend: { week: string; rate: number }[];
 }
 
-const COLOR_PRIMARY = "#0000cc";
+const COLOR_PRIMARY = "#2111d8";
 const COLOR_ACCENT_ICON = "text-red-500";
 const COLOR_SUCCESS = "#10b981";
 const COLOR_WARNING = "#f97316";

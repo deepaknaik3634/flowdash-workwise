@@ -9,8 +9,8 @@ import { Users, BarChart3, Lock, LogIn, Loader2 } from "lucide-react"; // Added 
 import { useAuth } from "./AuthContext";
 
 // --- Colors based on inspiration ---
-const COLOR_PRIMARY = "#0000cc";
-const COLOR_ACCENT_ICON = "text-red-500";
+const COLOR_PRIMARY = "#100f10";
+const COLOR_ACCENT_ICON = "text-yellow-400";
 
 export default function Login() {
   const [role, setRole] = useState("");
@@ -89,7 +89,7 @@ export default function Login() {
   // ];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-indigo-200 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card 
           className="shadow-2xl border-t-4 rounded-xl"
@@ -149,7 +149,7 @@ export default function Login() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  className="focus:border-[#0000cc] border-gray-30o"
+                  className="border-gray-300 focus:border-[#0000cc]"
                 />
               </div>
 
@@ -175,9 +175,9 @@ export default function Login() {
                 disabled={loading}
               >
                 {loading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin text-red-500" /> Logging in...</>
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin text-black-500" /> Logging in...</>
                 ) : (
-                    <><LogIn className="h-5 w-5 text-red-500" /> Login</>
+                    <><LogIn className="h-5 w-5 text-black-500" /> Login</>
                 )}
               </Button>
 
