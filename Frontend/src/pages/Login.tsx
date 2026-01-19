@@ -92,7 +92,7 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-indigo-200 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card 
-          className="shadow-2xl border-t-4 rounded-xl"
+          className="shadow-[0px_20px_60px_rgba(0,0,0,0.35)] border-t-4 rounded-xl"
           style={{ borderTopColor: COLOR_PRIMARY }}
         >
           <CardHeader className="text-center space-y-2">
