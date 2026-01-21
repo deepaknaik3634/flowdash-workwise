@@ -14,19 +14,29 @@ const app = express();
 
 app.use(cookieParser());
 
+const allowedOrigins = [
+  "http://localhost:8081",
+  "https://flowdash-workwise.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "http://localhost:8081",
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // allow Postman
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
+
 app.use(express.json());
 
 app.use((req, res, next) => {
   res.removeHeader("X-Frame-Options"); // you already had this
   res.setHeader(
     "Content-Security-Policy",
-    "frame-ancestors 'self' http://localhost:8082"
+    "frame-ancestors 'self' https://flowdash-workwise.vercel.app"
   );
   res.setHeader("Permissions-Policy", "geolocation=(self)");
   next();

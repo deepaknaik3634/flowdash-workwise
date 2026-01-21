@@ -1,9 +1,8 @@
 import { Router } from "express";
-import { registerUser, loginUser } from "../routes/auth";
+import authRouter from "./auth";   // ✅ correct import
 
 const router = Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.use("/", authRouter);       // ✅ use routes from auth.ts
 
 export default router;
